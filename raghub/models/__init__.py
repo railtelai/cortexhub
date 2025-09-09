@@ -4,7 +4,10 @@ from .BuildRagFromDocModels import (
     GraphRagChunkTextsModel,
     GraphRagQuestionModel,
     ConvertTextToEmbeddingResponseModel,
-    BuildGraphRagResponseModel
+    BuildGraphRagResponseModel,
+    RerankeRequestModel,
+    RerankerItemModel,
+    RerankerResponseModel,
 )
 
 
@@ -14,5 +17,8 @@ __all__ = [
     "GraphRagChunkTextsModel",
     "GraphRagQuestionModel",
     "ConvertTextToEmbeddingResponseModel",
-    "BuildGraphRagResponseModel"
+    "BuildGraphRagResponseModel",
+    "RerankeRequestModel",
+    "RerankerItemModel",
+    "RerankerResponseModel",
 ]

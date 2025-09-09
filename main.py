@@ -32,7 +32,7 @@ server.add_middleware(
 )
 server.include_router(ragRouter, prefix="/api/v1/build")
 
-CerebrasChat()
+cerebrasChat = CerebrasChat()
 
 if __name__ == "__main__":
     import uvicorn
