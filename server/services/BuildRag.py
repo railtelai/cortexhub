@@ -41,6 +41,6 @@ class BuildRag(BuildRagImpl):
 
                 if chunkRelations:
                     await conn.executemany(
-                        "INSERT INTO chunk_relations (id,chunk_id, text, embedding) VALUES ($1, $2, $3, $4)",
+                        "INSERT INTO chunk_relations (id,chunk_id, relation, embedding) VALUES ($1, $2, $3, $4)",
                         chunkRelations,
                     )

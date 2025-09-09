@@ -35,8 +35,8 @@ class Chat(ChatImpl):
                     maxCompletionTokens=5000,
                     messages=messages,
                     stream=True,
-                    temperature=0.3,
-                    topP=0.9,
+                    temperature=0.7,
+                    topP=1.0,
                 )
             )
             return cerebrasChatResponse
@@ -110,15 +110,17 @@ class Chat(ChatImpl):
             rows = await conn.fetch(searchRagQuery, cast(Any,queryVector)[0].embedding, 50)
 
             docs = [doc["text"] for doc in rows]
+            
 
         topRerankedDocs = await self.RerankeDocs(
             request=RerankeRequestModel(
                 query=request.query,
-                returnDocuments=False,
-                topN=10,
+                returnDocuments=True,
+                topN=7,
                 docs=docs
             )
         )
+        print(topRerankedDocs)
 
         topDocs: list[str] = [cast(Any,doc.doctext) for doc in topRerankedDocs.results]
 
@@ -135,10 +137,8 @@ class Chat(ChatImpl):
                 - Always use headings (###) for clarity in longer answers.
                 - Keep answers professional, without unnecessary filler text.
                 - Images:
-                - By default, include only **one most relevant image**.
-                - If the user explicitly asks for multiple images, include all relevant ones.
+                - include only ** most relevant images** to user query.
                 - Show each image as:
-                    **Description**  
                     ![alt text](URL)
                 - If the image is too large or detailed, use:
                     <img src="URL" width="600"/>

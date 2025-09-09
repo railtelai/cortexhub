@@ -36,10 +36,10 @@ class BuildRagFromDoc(BuildRagFromDocImpl):
         processedChunk: list[str] = []
 
         for chunk in chunks:
-            processedChunk.append(chunk)
 
             matchedIndex = re.findall(r"<<[Ii][Mm][Aa][Gg][Ee]-([0-9]+)>>", chunk)
             indeces = list(map(int, matchedIndex))
+            print(matchedIndex)
             if len(indeces) == 0:
                 processedChunk.append(chunk)
             else:
@@ -49,9 +49,11 @@ class BuildRagFromDoc(BuildRagFromDocImpl):
                         base64Str=images[index - 1],
                         folder="opd",
                     )
-                    token = f"<<imge-{index -1}>>"
-                    chunkText.replace(token, f" Image url : {imageUrl}")
+                    token = f"<<image-{index}>>"
+                    chunkText = chunkText.replace(token, f"![Image]({imageUrl})")
                 processedChunk.append(chunkText)
+                print(chunkText)
+
 
         return processedChunk
 
@@ -109,7 +111,6 @@ class BuildRagFromDoc(BuildRagFromDocImpl):
             questions=chatResponse.get("questions"),
             relations=chatResponse.get("relations"),
         )
-        print(response)
         return response
 
     async def ConvertTextToEmbeddings(

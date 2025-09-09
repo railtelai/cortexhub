@@ -28,9 +28,9 @@ RULES
    - Remove unprintable control characters.
    - Preserve ALL URLs, image links
 - Do NOT invent entities.
-- Relations: Form ≥9 natural language sentences that clearly express how the entities are related. Each relation must read as a proper sentence including the entities.
+- Relations: Form ≥15 natural language sentences that clearly express how the entities are related. Each relation must read as a proper sentence including the entities.
 - Do NOT include URLs or image tokens in Relations
 - If a relation cannot be mapped to a [subject, object], DROP that relation so lengths stay equal.
-- Questions: Form possible questions per chunk, all are answerable from chunk only form more then 4 per chunk which has a clear answer in the current chunk.
+- Questions: Form possible questions per chunk, all are answerable from chunk only form more then 15 per chunk which has a clear answer in the current chunk.
 - Do NOT include URLs or image tokens in questions
 """

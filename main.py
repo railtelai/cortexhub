@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 from chathub.services import CerebrasChat
-from server.controllers import ragRouter
+from server.controllers import ragRouter,ChatRouter
 import asyncio
 
 from dbhub import psqlDb
@@ -31,7 +31,7 @@ server.add_middleware(
     allow_headers=["*"],
 )
 server.include_router(ragRouter, prefix="/api/v1/build")
-
+server.include_router(ChatRouter, prefix="/api/v1/ask")
 cerebrasChat = CerebrasChat()
 
 if __name__ == "__main__":
