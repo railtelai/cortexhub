@@ -22,7 +22,7 @@ class RagUtils(RagUtilsImpl):
     def __init__(self):
         self.ExtarctTextFromDoc = ExtractTextFromDoc()
 
-    def ExtractChunksFromDoc_Rag(
+    def ExtractChunksFromDoc(
         self, file: str, chunkSize: int, chunkOLSize: int | None = 0
     ) -> Tuple[list[str], list[str]]:
         _PAGE_RE = re.compile(r"\bpage\s+\d+\s+of\s+\d+\b", re.IGNORECASE)
@@ -87,7 +87,7 @@ class RagUtils(RagUtilsImpl):
             images,
         )
     
-    async def UploadImagesToFirebase(self, base64Str: str, folder: str) -> str:
+    async def UploadImageToFirebase(self, base64Str: str, folder: str) -> str:
         imageBytes: bytes = base64.b64decode(base64Str)
         filename: str = f"{folder}/{uuid4()}.png"
         bucket: Any = cast(Any, storage).bucket()

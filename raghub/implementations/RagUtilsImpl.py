@@ -11,7 +11,7 @@ class RagUtilsImpl(ABC):
         pass
 
     @abstractmethod
-    async def UploadImagesToFirebase(
+    async def UploadImageToFirebase(
         self, base64Str: str, folder: str
     ) -> str:
         pass

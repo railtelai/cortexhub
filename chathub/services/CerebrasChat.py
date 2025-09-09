@@ -12,7 +12,7 @@ from chathub.models import (
     CerebrasChatChoiceMessageModel,
 )
 from cerebras.cloud.sdk import DefaultAioHttpClient
-from typing import Any, cast
+from typing import Any, cast    
 from chathub.workers import GetCerebrasApiKey
 
 client = AsyncCerebras(
@@ -59,7 +59,7 @@ class CerebrasChat(CerebrasChatImpl):
                                 "name": "schema",
                                 "strict": True,
                                 "schema": {
-                                    "type": "obejct",
+                                    "type": "object",
                                     "properties": {
                                         "response": modelParams.responseFormat
                                     },

@@ -4,8 +4,6 @@ from .CerebrasChatModels import (
     CerebrasChatDataModel,
     CerebrasChatMessageModel,
     CerebrasChatRequestModel,
-    CerebrasChatResponseFormatJsonSchemaModel,
-    CerebrasChatResonseFormatModel,
     CerebrasChatResponseModel,
     CerebrasChatUsageModel,
 )
@@ -17,8 +15,6 @@ __all__ = [
     "CerebrasChatDataModel",
     "CerebrasChatMessageModel",
     "CerebrasChatRequestModel",
-    "CerebrasChatResponseFormatJsonSchemaModel",
-    "CerebrasChatResonseFormatModel",
     "CerebrasChatResponseModel",
     "CerebrasChatUsageModel",
 ]
