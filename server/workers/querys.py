@@ -6,7 +6,9 @@ top_chunks AS (
   SELECT c.id AS chunk_id, c.text, 1.0 - (c.embedding <#> q.query) AS score, 'chunk' AS source
   FROM q
   CROSS JOIN LATERAL (
-    SELECT * FROM public.chunks
+    SELECT *
+    FROM public.chunks
+    WHERE embedding IS NOT NULL
     ORDER BY embedding <#> q.query
     LIMIT $2
   ) c
@@ -15,7 +17,9 @@ top_questions AS (
   SELECT cq.chunk_id, ch.text, 1.0 - (cq.embedding <#> q.query) AS score, 'question' AS source
   FROM q
   CROSS JOIN LATERAL (
-    SELECT * FROM public.chunk_questions
+    SELECT *
+    FROM public.chunk_questions
+    WHERE embedding IS NOT NULL
     ORDER BY embedding <#> q.query
     LIMIT $2
   ) cq
@@ -25,7 +29,9 @@ top_relations AS (
   SELECT cr.chunk_id, ch.text, 1.0 - (cr.embedding <#> q.query) AS score, 'relation' AS source
   FROM q
   CROSS JOIN LATERAL (
-    SELECT * FROM public.chunk_relations
+    SELECT *
+    FROM public.chunk_relations
+    WHERE embedding IS NOT NULL
     ORDER BY embedding <#> q.query
     LIMIT $2
   ) cr
@@ -46,6 +52,7 @@ FROM all_matches
 GROUP BY chunk_id, text
 ORDER BY best_score DESC
 LIMIT $2;
+
 
 
 """

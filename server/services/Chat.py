@@ -35,15 +35,15 @@ class Chat(ChatImpl):
             cerebrasChatResponse: Any = await getCerebrasChatService().Chat(
                 modelParams=CerebrasChatRequestModel(
                     apiKey=GetCerebrasApiKey(),
-                    model="gpt-oss-120b",
+                    model="qwen-3-235b-a22b-instruct-2507",
                     maxCompletionTokens=15000,
                     messages=messages,
-                    stream=False,
-                    temperature=0.2,
-                    topP=1.0,
+                    stream=True,
+                    temperature=0.0,
+                    topP=0.9,
                 )
             )
-            return cerebrasChatResponse.content
+            return cerebrasChatResponse
 
         except Exception as _:
             return None
@@ -121,14 +121,14 @@ class Chat(ChatImpl):
                 "jsonb", encoder=json.dumps, decoder=json.loads, schema="pg_catalog"
             )
             rows = await conn.fetch(
-                searchRagQuery, cast(Any, queryVector)[0].embedding, 20
+                searchRagQuery, cast(Any, queryVector)[0].embedding, 50
             )
 
             docs = [doc["text"] for doc in rows]
 
         topRerankedDocs = await self.RerankeDocs(
             request=RerankeRequestModel(
-                query=request.query, returnDocuments=True, topN=10, docs=docs
+                query=request.query, returnDocuments=True, topN=20, docs=docs
             )
         )
 
@@ -150,12 +150,8 @@ class Chat(ChatImpl):
                         - Avoid unnecessary filler text. Keep tone professional and focused.
                         - Do **not** generate tables unless explicitly requested by the user.
 
-                        # Images
-                        - Include only images that are **highly relevant** to the user’s query.
-                        - Present each image in this format:
-                        ![Descriptive alt text](URL)
-                        - Do not add decorative or unrelated images.
-                        - Never embed images inside tables.
+                        # Links
+                        - Include Images links and video  links that are **highly relevant** to the user’s query.
 
                         # Missing Information
                         - If no relevant information exists in the retrieved docs 
@@ -177,6 +173,7 @@ class Chat(ChatImpl):
         ]
 
         contextResponse = await self.cerebrasContextChat(messages=messages)
+        return contextResponse
 
         finalChatMessages: list[CerebrasChatMessageModel] = [
             CerebrasChatMessageModel(

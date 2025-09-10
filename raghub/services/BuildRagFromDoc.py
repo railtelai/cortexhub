@@ -8,12 +8,12 @@ from typing import Any
 import json
 from chathub.enums import CerebrasChatMessageRoleEnum
 from raghub.models import (
-    ExtractGraphRagInformationFromChunkResponseModel,
+    ExtractRagInformationFromChunkResponseModel,
     GraphRagQuestionModel,
     GraphRagRelationModel,
     GraphRagChunkTextsModel,
     ConvertTextToEmbeddingResponseModel,
-    BuildGraphRagResponseModel,
+    BuildRagResponseModel,
 )
 from raghub.enums import RagBuildProcessEnum
 from uuid import uuid4
@@ -54,11 +54,11 @@ class BuildRagFromDoc(BuildRagFromDocImpl):
 
         return processedChunk
 
-    async def ExtractGraphRagInformationFromChunk(
+    async def ExtractRagInformationFromChunk(
         self,
         messages: list[CerebrasChatMessageModel],
         retryLoopIndex: int,
-    ) -> ExtractGraphRagInformationFromChunkResponseModel:
+    ) -> ExtractRagInformationFromChunkResponseModel:
         if retryLoopIndex > self.RetryLoopIndexLimit:
             raise Exception(
                 "Exception while extarcting relation and questions from chunk"
@@ -98,12 +98,12 @@ class BuildRagFromDoc(BuildRagFromDocImpl):
                 )
             )
 
-            await self.ExtractGraphRagInformationFromChunk(
+            await self.ExtractRagInformationFromChunk(
                 messages=messages,
                 retryLoopIndex=retryLoopIndex + 1,
             )
 
-        response = ExtractGraphRagInformationFromChunkResponseModel(
+        response = ExtractRagInformationFromChunkResponseModel(
             chunk=chatResponse.get("chunk"),
             questions=chatResponse.get("questions"),
             relations=chatResponse.get("relations"),
@@ -132,7 +132,7 @@ class BuildRagFromDoc(BuildRagFromDocImpl):
 
     async def HandleRagBuildProcess(
         self, file: str, process: RagBuildProcessEnum
-    ) -> BuildGraphRagResponseModel | None:
+    ) -> BuildRagResponseModel | None:
 
         if process == RagBuildProcessEnum.GRAPHRAG:
             chunks = await self.HandleChunkProcessing(file=file)
@@ -150,7 +150,10 @@ class BuildRagFromDoc(BuildRagFromDocImpl):
                         role=CerebrasChatMessageRoleEnum.USER, content=chunk
                     ),
                 ]
-                chunkGraphRagInfo = await self.ExtractGraphRagInformationFromChunk(
+                import time
+
+                time.sleep(1)
+                chunkGraphRagInfo = await self.ExtractRagInformationFromChunk(
                     messages=messages, retryLoopIndex=0
                 )
                 chunkId = uuid4()
@@ -189,7 +192,7 @@ class BuildRagFromDoc(BuildRagFromDocImpl):
                 chunkTexts.append(thisChunkText)
                 chunkRelations.extend(thisChunkRelationts)
                 chunkQuestions.extend(thisChunkQuestions)
-            return BuildGraphRagResponseModel(
+            return BuildRagResponseModel(
                 chunkQuestions=chunkQuestions,
                 chunkRelations=chunkRelations,
                 chunks=chunkTexts,

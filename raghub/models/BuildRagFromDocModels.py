@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from uuid import UUID
 
 
-class ExtractGraphRagInformationFromChunkResponseModel(BaseModel):
+class ExtractRagInformationFromChunkResponseModel(BaseModel):
     chunk: str
     relations: list[str]
     questions: list[str]
@@ -33,7 +33,7 @@ class ConvertTextToEmbeddingResponseModel(BaseModel):
     embedding: list[float]
 
 
-class BuildGraphRagResponseModel(BaseModel):
+class BuildRagResponseModel(BaseModel):
     chunks: list[GraphRagChunkTextsModel]
     chunkQuestions: list[GraphRagQuestionModel]
     chunkRelations: list[GraphRagRelationModel]

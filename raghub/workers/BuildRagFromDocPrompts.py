@@ -34,3 +34,33 @@ RULES
 - Questions: Form possible questions per chunk, all are answerable from chunk only form more then 15 per chunk which has a clear answer in the current chunk.
 - Do NOT include URLs or image tokens in questions
 """
+
+
+
+EXTRCT_INFO_FROM_CHUNK_YT_VIDEO = r"""
+TASK
+Return ONLY valid JSON per schema for ONE text chunk.
+
+INPUT
+{ "chunk": "..." }
+
+OUTPUT
+{
+  "response": {
+    "relations": ["..."],
+    "questions": ["..."],
+    "chunk": "..."
+  }
+}
+
+RULES
+- JSON only, no markdown or comments.
+- Use DOUBLE quotes.
+- "chunk": clean text (trim, collapse spaces, fix broken words, remove control chars), detect source language and translate fully to English if not already, and KEEP YouTube URL if present.
+- THE ENTIRE OUTPUT (chunk, relations, and questions) MUST BE IN ENGLISH — no non-English words or transliterations.
+- Do NOT drop or alter the YouTube URL.
+- Exclude speaker identifiers, personal mentions (e.g., "I am ..."), or meta-references like "in this video" or "the speaker said". Keep only the main descriptive/contextual content.
+- Relations: ≥8 natural-language sentences describing relationships or statements that are explicitly present or can be directly paraphrased from the chunk. Focus only on the actual content, not on who is speaking or that it is a video. No URLs.
+- Questions: ≥8 questions that are directly answerable from information present in the chunk (explicitly stated or direct paraphrase). Do not invent questions about things not in the chunk. No URLs.
+- Keep relations and questions strictly grounded in the chunk’s content. Do not add outside information, speculation, or analysis.
+"""

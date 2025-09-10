@@ -11,7 +11,11 @@ class RagUtilsImpl(ABC):
         pass
 
     @abstractmethod
-    async def UploadImageToFirebase(
-        self, base64Str: str, folder: str
-    ) -> str:
+    async def UploadImageToFirebase(self, base64Str: str, folder: str) -> str:
+        pass
+
+    @abstractmethod
+    def ExtractChunksFromYtVideo(
+        self, videoId: str, chunkSec: int = 100
+    ) -> list[str]:
         pass

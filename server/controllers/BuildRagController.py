@@ -13,6 +13,11 @@ async def GetDb() -> PsqlDb:
     return psqlDb
 
 
+# @ragRouter.get("/brfd")
+# async def BuildFromDoc():
+#     return await buildRagService.BuildQaRag("./others/opd_manual.pdf", await GetDb())
+
+
 @ragRouter.get("/brfd")
 async def BuildFromDoc():
-    return await buildRagService.BuildRag("./others/opd_manual.pdf", await GetDb())
+    return await buildRagService.BuildYtRag("81SrvNqkcVI", await GetDb())

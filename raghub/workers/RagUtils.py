@@ -4,7 +4,7 @@ import unicodedata
 from uuid import uuid4
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from raghub.implementations import RagUtilsImpl
-from workers.services import ExtractTextFromDoc
+from workers.services import ExtractTextFromDoc, ExtractTextFromYt
 
 
 import base64
@@ -21,6 +21,14 @@ class RagUtils(RagUtilsImpl):
 
     def __init__(self):
         self.ExtarctTextFromDoc = ExtractTextFromDoc()
+        self.ExtarctTextFromYt = ExtractTextFromYt()
+
+    def ExtractChunksFromYtVideo(self, videoId: str, chunkSec: int = 100) -> list[str]:
+        text = self.ExtarctTextFromYt.ExtractText(videoId, chunkSec=chunkSec)
+        response: list[str] = [
+            f"{item.chunkText} for this [video link]({item.chunkUrl})" for item in text
+        ]
+        return response
 
     def ExtractChunksFromDoc(
         self, file: str, chunkSize: int, chunkOLSize: int | None = 0
@@ -86,7 +94,7 @@ class RagUtils(RagUtilsImpl):
             chunks,
             images,
         )
-    
+
     async def UploadImageToFirebase(self, base64Str: str, folder: str) -> str:
         imageBytes: bytes = base64.b64decode(base64Str)
         filename: str = f"{folder}/{uuid4()}.png"

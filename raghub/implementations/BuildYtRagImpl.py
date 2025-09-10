@@ -5,14 +5,9 @@ from raghub.models import (
     BuildRagResponseModel,
 )
 from chathub.models import CerebrasChatMessageModel
-from raghub.enums import RagBuildProcessEnum
 
 
-class BuildRagFromDocImpl(ABC):
-
-    @abstractmethod
-    async def HandleChunkProcessing(self, file: str) -> list[str]:
-        pass
+class BuildYtRagImpl(ABC):
 
     @abstractmethod
     async def ExtractRagInformationFromChunk(
@@ -28,6 +23,6 @@ class BuildRagFromDocImpl(ABC):
 
     @abstractmethod
     async def HandleRagBuildProcess(
-        self, file: str, process: RagBuildProcessEnum
+        self, videoId: str
     ) -> BuildRagResponseModel | None:
         pass
