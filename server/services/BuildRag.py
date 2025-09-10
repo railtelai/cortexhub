@@ -1,9 +1,10 @@
 from typing import Any
 from server.implementations import BuildRagImpl
-from raghub.services import BuildRagFromDoc
+from raghub.services import BuildRagFromDoc, BuildQaRagFromDoc
 from raghub.enums import RagBuildProcessEnum
 
 buildRag = BuildRagFromDoc()
+buildQaRag = BuildQaRagFromDoc()
 
 
 class BuildRag(BuildRagImpl):
@@ -43,4 +44,32 @@ class BuildRag(BuildRagImpl):
                     await conn.executemany(
                         "INSERT INTO chunk_relations (id,chunk_id, relation, embedding) VALUES ($1, $2, $3, $4)",
                         chunkRelations,
+                    )
+
+    async def BuildQaRag(self, file: str, db: Any):
+        ragResponse = await buildQaRag.HandleBuildQaRagProcess(
+            file,
+        )
+
+        chunkTexts: list[Any] = []
+        chunkQuestions: list[Any] = []
+
+        if len(ragResponse.chunks) > 0 and len(ragResponse.questions) > 0:
+
+            for ct in ragResponse.chunks:
+                chunkTexts.append((ct.id, ct.text, ct.embedding))
+            for q in ragResponse.questions:
+                chunkQuestions.append((q.id, q.chunkId, q.text, q.embedding))
+
+            async with db.pool.acquire() as conn:
+                if chunkTexts:
+                    await conn.executemany(
+                        "INSERT INTO chunks (id, text, embedding) VALUES ($1, $2, $3)",
+                        chunkTexts,
+                    )
+
+                if chunkQuestions:
+                    await conn.executemany(
+                        "INSERT INTO chunk_questions (id,chunk_id, text, embedding) VALUES ($1, $2, $3,$4)",
+                        chunkQuestions,
                     )

@@ -9,6 +9,10 @@ from .BuildRagFromDocModels import (
     RerankerItemModel,
     RerankerResponseModel,
 )
+from .BuildQaRagFromDocModels import (
+    HandleBuildQaRagProcessResponseModel,
+    ExtarctQaResponseModel
+)
 
 
 __all__ = [
@@ -21,4 +25,6 @@ __all__ = [
     "RerankeRequestModel",
     "RerankerItemModel",
     "RerankerResponseModel",
+    "HandleBuildQaRagProcessResponseModel",
+    "ExtarctQaResponseModel",
 ]

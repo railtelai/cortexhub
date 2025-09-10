@@ -7,6 +7,7 @@ buildRagService = BuildRag()
 
 
 async def GetDb() -> PsqlDb:
+    
     from main import psqlDb
 
     return psqlDb

@@ -132,6 +132,7 @@ class CerebrasChat(CerebrasChatImpl):
                 status=CerebrasChatResponseStatusEnum.SUCCESS,
                 content=LLMData.choices[0].message.content,
             )
+            
 
         except cerebras.cloud.sdk.APIConnectionError as e:
             print(e)

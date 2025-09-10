@@ -39,7 +39,6 @@ class BuildRagFromDoc(BuildRagFromDocImpl):
 
             matchedIndex = re.findall(r"<<[Ii][Mm][Aa][Gg][Ee]-([0-9]+)>>", chunk)
             indeces = list(map(int, matchedIndex))
-            print(matchedIndex)
             if len(indeces) == 0:
                 processedChunk.append(chunk)
             else:
@@ -52,8 +51,6 @@ class BuildRagFromDoc(BuildRagFromDocImpl):
                     token = f"<<image-{index}>>"
                     chunkText = chunkText.replace(token, f"![Image]({imageUrl})")
                 processedChunk.append(chunkText)
-                print(chunkText)
-
 
         return processedChunk
 
@@ -197,6 +194,6 @@ class BuildRagFromDoc(BuildRagFromDocImpl):
                 chunkRelations=chunkRelations,
                 chunks=chunkTexts,
             )
-        
+
         else:
             return None

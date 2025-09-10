@@ -10,6 +10,11 @@ from raghub.models import (
 
 
 class ChatImpl(ABC):
+    @abstractmethod
+    async def cerebrasContextChat(
+        self, messages: list[CerebrasChatMessageModel]
+    ) -> StreamingResponse | None:
+        pass
 
     @abstractmethod
     async def cerebrasChat(
