@@ -2,7 +2,7 @@ from typing import Any, cast
 
 from fastapi.responses import StreamingResponse
 from chathub.models import CerebrasChatRequestModel, CerebrasChatMessageModel
-from chathub.workers import GetCerebrasApiKey
+from chathub.workers import GetCerebrasApiKey, GetCerebrasApiKey1, GetCerebrasApiKey2
 from chathub.enums import CerebrasChatMessageRoleEnum
 import json
 from server.models import ChatRequestModel, PreProcessUserQueryResponseModel
@@ -42,11 +42,11 @@ class Chat(ChatImpl):
         preProcessResponse: Any = await getCerebrasChatService().Chat(
             modelParams=CerebrasChatRequestModel(
                 apiKey=GetCerebrasApiKey(),
-                model="llama-4-scout-17b-16e-instruct",
-                maxCompletionTokens=2000,
+                model="llama-4-maverick-17b-128e-instruct",
+                maxCompletionTokens=500,
                 messages=messages,
-                temperature=0.1,
-                topP=0.9,
+                temperature=0.0,
+                topP=0.0,
                 responseFormat={
                     "type": "object",
                     "properties": {
@@ -71,6 +71,8 @@ class Chat(ChatImpl):
         try:
 
             chatResponse = json.loads(preProcessResponse.content).get("response")
+            if chatResponse.get("cleanquery") is None:
+                raise Exception("Exception while extracting relations from chunk")
 
         except Exception as e:
             print("Error occured while extracting realtions from chunk retrying ...")
@@ -78,7 +80,7 @@ class Chat(ChatImpl):
             messages.append(
                 CerebrasChatMessageModel(
                     role=CerebrasChatMessageRoleEnum.USER,
-                    content="Please generate a valid json object",
+                    content="Please generate a valid json object clean query and type",
                 )
             )
             await self.PreProcessUserQuery(
@@ -97,12 +99,12 @@ class Chat(ChatImpl):
         try:
             cerebrasChatResponse: Any = await getCerebrasChatService().Chat(
                 modelParams=CerebrasChatRequestModel(
-                    apiKey=GetCerebrasApiKey(),
-                    model="qwen-3-235b-a22b-instruct-2507",
+                    apiKey=GetCerebrasApiKey1(),
+                    model="gpt-oss-120b",
                     maxCompletionTokens=15000,
                     messages=messages,
                     stream=True,
-                    temperature=0.3,
+                    temperature=0.0,
                     topP=0.9,
                 )
             )
@@ -117,12 +119,12 @@ class Chat(ChatImpl):
         try:
             cerebrasChatResponse: Any = await getCerebrasChatService().Chat(
                 modelParams=CerebrasChatRequestModel(
-                    apiKey=GetCerebrasApiKey(),
+                    apiKey=GetCerebrasApiKey2(),
                     model="gpt-oss-120b",
-                    maxCompletionTokens=10000,
+                    maxCompletionTokens=5000,
                     messages=messages,
                     stream=True,
-                    temperature=0.2,
+                    temperature=0.0,
                     topP=0.9,
                 )
             )
@@ -188,22 +190,32 @@ class Chat(ChatImpl):
                 "type": "<enum>"
                 }
 
-                Classification rules for "type":
-                - "CONTACT_INFO_ERROR": If the user shares  personal, confidential, or sensitive information (phone, email, address, account details, medical record number, ID numbers, etc.).
-                - "ABUSE_LANG_ERROR": If the current user message only  contains abusive, offensive, hateful, violent, harassing, or threatening language dont take previous messages abusive messages focus on current one.
-                - "HMIS": If the user query is about OPD, HMIS, hospital records, patient registration, OPD workflow, prescriptions, reports, or anything related to the healthcare management information system (HMIS). HMIS is a digital platform used in hospitals and health facilities to manage OPD, patient data, treatment records, prescriptions, lab reports, billing, and overall healthcare workflows. Questions like “what is OPD”, “what is HMIS”, or “explain OPD process” fall here.
-                - "PREVIOUS": If and only if the user explicitly refers to their previous query, previous question, or previous message (e.g., “same as before”, “what about the last one”, “yes to the previous”, “continue from earlier”).
+                DEFINITIONS (use these exactly):
+- PREVIOUS: The current user message is explicitly confirming, continuing, referring to, or asking a follow-up about the immediately prior assistant message (examples below). Includes short confirmations to a prior assistant prompt ("yes", "no", "okay", "continue"), simple follow-ups related to the last assistant answer, common conversational acknowledgements (greetings, thanks) when they are not new search intents, and direct meta-questions about the assistant (who are you, what can you do, version, creator, age, location).
+- SEARCH: Any generic question or information request that should trigger the knowledge/RAG pipeline (e.g., factual questions, how-to, dosage, definitions), and any ambiguous short message that is not clearly a PREVIOUS confirmation of the immediate assistant prompt.
+- ABUSE_LANG_ERROR: The current user message is abusive, harassing, threatening, or hateful. Consider only the current message content.
+- CONTACT_INFO_ERROR: The current user message contains sensitive personal identifiers (phone numbers, emails, national ID/Aadhar, medical record numbers, account numbers, passwords, street addresses, etc.).
+- HMIS: The current user message is explicitly about hospital operations, OPD, HMIS platform, patient records, registration, prescriptions, lab reports, billing, hospital workflows, or healthcare-information-system mechanics.
 
-                Rules for "cleanquery":
-                - Always normalize the query into clean English.
-                - If user asks in Hindi or another non-English language → translate to English.
-                - Fix spelling mistakes and grammar errors.
-                - Form the user query into a meaningful question if it is not already in question form.
-
-                Constraints:
-                - Output must be valid JSON only (no markdown, no commentary).
-                - Keys must be exactly "cleanquery" and "type".
-                - "type" must be one of: "PREVIOUS", "ABUSE_LANG_ERROR", "CONTACT_INFO_ERROR", "HMIS". """,
+MANDATORY RULES (follow in order):
+1. Output EXACTLY valid JSON only. No commentary, no markdown, no extra fields, no wrapper objects, no trailing text.
+2. Allowed "type" values are exactly: PREVIOUS, SEARCH, ABUSE_LANG_ERROR, CONTACT_INFO_ERROR, HMIS (uppercase).
+3. Use conversation CONTEXT to decide PREVIOUS. PREVIOUS applies only when the immediately prior assistant message explicitly invited confirmation/continuation (e.g., "Do you want me to search through other sources for you?", "Would you like more details?", "Shall I continue?") OR when the user’s current message is an explicit follow-up or direct reference to the previous assistant answer (e.g., "about that", "same", "do that", "yes to previous").
+4. If the immediately prior assistant message asked the user directly to confirm/continue/search and the user replies with any short confirmation token (examples: yes, y, sure, okay, continue, no, nah) classify as PREVIOUS and set cleanquery to "(previous)".
+5. Treat greetings ("hi", "hello", "hey"), thanks ("thanks", "thank you"), and basic assistant meta-questions ("who are you?", "what can you do?", "how old are you?", "where are you from?", "who created you?", "what is your version?") as PREVIOUS (they are conversational not new search intents).
+6. If the current message contains personal/sensitive identifiers, set type = CONTACT_INFO_ERROR (take precedence over HMIS/SEARCH).
+7. If the current message is abusive/harassing/threatening, set type = ABUSE_LANG_ERROR (take precedence over HMIS/SEARCH).
+8. If the current message is clearly about hospital systems, OPD, patient records, HMIS workflows, set type = HMIS.
+9. Otherwise set type = SEARCH.
+10. For cleanquery:
+    - Return a concise, grammatical English sentence or question summarizing the user's intent (prefer < ~40 tokens).
+    - Translate non-English input to English and correct obvious spelling/grammar.
+    - Do not include or repeat prior assistant messages verbatim unless you must set cleanquery to "(previous)" per rule 4.
+    - If type = PREVIOUS and the immediately prior assistant message invited confirmation/continuation, set "cleanquery" exactly to "(previous)".
+    - If type = PREVIOUS but there is no explicit immediate assistant prompt to continue/search, DO NOT guess — set type = SEARCH and normalize the user message into cleanquery.
+11. If classification is ambiguous, prefer SEARCH (not HMIS).
+12. Validate output: ensure "type" is one of allowed enums. If your internal reasoning would produce any other value, output {"cleanquery":"<normalized text>","type":"SEARCH"} instead.
+13. Do not invent or use hidden context. Use only the provided conversation context.""",
             ),
         ]
         for message in request.messages:
@@ -213,7 +225,7 @@ class Chat(ChatImpl):
                     role=(
                         CerebrasChatMessageRoleEnum.USER
                         if message.role == "user"
-                        else CerebrasChatMessageRoleEnum.SYSTEM
+                        else CerebrasChatMessageRoleEnum.ASSISTANT
                     ),
                 )
             )
@@ -227,7 +239,6 @@ class Chat(ChatImpl):
         preProcessResponse = await self.PreProcessUserQuery(
             query=request.query, loopIndex=0, messages=preProcessMessage
         )
-        print(preProcessResponse.type)
 
         if preProcessResponse.type == "ABUSE_LANG_ERROR":
 
@@ -247,7 +258,7 @@ class Chat(ChatImpl):
             generalMessages: list[CerebrasChatMessageModel] = [
                 CerebrasChatMessageModel(
                     role=CerebrasChatMessageRoleEnum.SYSTEM,
-                    content="systemInst",
+                    content="You are **HMIS AI**  your response should be short and concise not more then 100 tokens ",
                 )
             ]
 
@@ -258,13 +269,13 @@ class Chat(ChatImpl):
                         role=(
                             CerebrasChatMessageRoleEnum.USER
                             if message.role == "user"
-                            else CerebrasChatMessageRoleEnum.SYSTEM
+                            else CerebrasChatMessageRoleEnum.ASSISTANT
                         ),
                     )
                 )
             generalMessages.append(
                 CerebrasChatMessageModel(
-                    content=preProcessResponse.cleanQuery,
+                    content=request.query,
                     role=(CerebrasChatMessageRoleEnum.USER),
                 )
             )
