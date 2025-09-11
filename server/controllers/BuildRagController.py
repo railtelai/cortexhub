@@ -7,7 +7,7 @@ buildRagService = BuildRag()
 
 
 async def GetDb() -> PsqlDb:
-    
+
     from main import psqlDb
 
     return psqlDb
@@ -15,9 +15,15 @@ async def GetDb() -> PsqlDb:
 
 # @ragRouter.get("/brfd")
 # async def BuildFromDoc():
-#     return await buildRagService.BuildQaRag("./others/opd_manual.pdf", await GetDb())
+#     return await buildRagService.BuildRag("./others/opd_manual.pdf", await GetDb())
+
+
+# @ragRouter.get("/brfd")
+# async def BuildFromDoc():
+#     return await buildRagService.BuildQaRag("./others/faq.csv", await GetDb())
 
 
 @ragRouter.get("/brfd")
-async def BuildFromDoc():
-    return await buildRagService.BuildYtRag("81SrvNqkcVI", await GetDb())
+async def BuildFromDoc(video_id: str):
+    db = await GetDb()
+    return await buildRagService.BuildYtRag(video_id, db)

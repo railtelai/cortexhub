@@ -51,6 +51,7 @@ class BuildQaRagFromDoc(BuildQaRagFromDocImpl):
     ) -> HandleBuildQaRagProcessResponseModel:
         text, _ = self.extarctTextFromDoc.ExtractTextFromDoc(docPath=file)
         qa = self.ExtarctQaFromText(text=text)
+
         chunks: list[GraphRagChunkTextsModel] = []
         questions: list[GraphRagQuestionModel] = []
 
@@ -64,7 +65,7 @@ class BuildQaRagFromDoc(BuildQaRagFromDocImpl):
 
                     chunks.append(
                         GraphRagChunkTextsModel(
-                            id=chunkId, text=qa.questions[index + idx]
+                            id=chunkId, text=qa.answers[index + idx]
                         )
                     )
                     questions.append(

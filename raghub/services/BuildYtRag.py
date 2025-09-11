@@ -1,5 +1,9 @@
 from raghub.implementations import BuildYtRagImpl
-from raghub.workers import RagUtils, EXTRCT_INFO_FROM_CHUNK_YT_VIDEO
+from raghub.workers import (
+    RagUtils,
+    EXTRCT_INFO_FROM_CHUNK_FOR_GRAPH_RAG,
+    CLEAN_YT_CHUNK_PROMPT,
+)
 from chathub.models import CerebrasChatMessageModel, CerebrasChatRequestModel
 from chathub.workers import GetCerebrasApiKey
 from chathub.services import CerebrasChat
@@ -9,13 +13,12 @@ from chathub.enums import CerebrasChatMessageRoleEnum
 from raghub.models import (
     ExtractRagInformationFromChunkResponseModel,
     GraphRagQuestionModel,
-    GraphRagRelationModel,
     GraphRagChunkTextsModel,
     ConvertTextToEmbeddingResponseModel,
     BuildRagResponseModel,
 )
 from uuid import uuid4
-import httpx    
+import httpx
 
 
 cerebrasChat = CerebrasChat()
@@ -41,17 +44,16 @@ class BuildYtRag(BuildYtRagImpl):
             modelParams=CerebrasChatRequestModel(
                 apiKey=GetCerebrasApiKey(),
                 model="qwen-3-235b-a22b-instruct-2507",
-                maxCompletionTokens=30000,
+                maxCompletionTokens=10000,
                 messages=messages,
-                temperature=0.2,
+                temperature=0.7,
                 responseFormat={
                     "type": "object",
                     "properties": {
-                        "relations": {"type": "array", "items": {"type": "string"}},
                         "questions": {"type": "array", "items": {"type": "string"}},
                         "chunk": {"type": "string"},
                     },
-                    "required": ["relations", "chunk", "questions"],
+                    "required": ["chunk", "questions"],
                     "additionalProperties": False,
                 },
             )
@@ -79,8 +81,57 @@ class BuildYtRag(BuildYtRagImpl):
         response = ExtractRagInformationFromChunkResponseModel(
             chunk=chatResponse.get("chunk"),
             questions=chatResponse.get("questions"),
-            relations=chatResponse.get("relations"),
         )
+        return response
+
+    async def CleanYtChunk(
+        self,
+        messages: list[CerebrasChatMessageModel],
+        retryLoopIndex: int,
+    ) -> str:
+        if retryLoopIndex > self.RetryLoopIndexLimit:
+            raise Exception(
+                "Exception while extarcting relation and questions from chunk"
+            )
+
+        cerebrasChatResponse: Any = await cerebrasChat.Chat(
+            modelParams=CerebrasChatRequestModel(
+                apiKey=GetCerebrasApiKey(),
+                model="qwen-3-235b-a22b-instruct-2507",
+                maxCompletionTokens=30000,
+                messages=messages,
+                temperature=0.2,
+                responseFormat={
+                    "type": "object",
+                    "properties": {
+                        "chunk": {"type": "string"},
+                    },
+                    "required": ["chunk"],
+                    "additionalProperties": False,
+                },
+            )
+        )
+        chatResponse: Any = {}
+        try:
+
+            chatResponse = json.loads(cerebrasChatResponse.content).get("response")
+
+        except Exception as e:
+            print("Error occured while extracting realtions from chunk retrying ...")
+            print(e)
+            messages.append(
+                CerebrasChatMessageModel(
+                    role=CerebrasChatMessageRoleEnum.USER,
+                    content="Please generate a valid json object",
+                )
+            )
+
+            await self.ExtractRagInformationFromChunk(
+                messages=messages,
+                retryLoopIndex=retryLoopIndex + 1,
+            )
+
+        response = chatResponse.get("chunk")
         return response
 
     async def ConvertTextToEmbeddings(
@@ -104,38 +155,47 @@ class BuildYtRag(BuildYtRagImpl):
         return None
 
     async def HandleRagBuildProcess(self, videoId: str) -> BuildRagResponseModel | None:
-        chunks = self.ragUtils.ExtractChunksFromYtVideo(chunkSec=200, videoId=videoId)
+        chunks = self.ragUtils.ExtractChunksFromYtVideo(chunkSec=400, videoId=videoId)
 
         chunkTexts: list[GraphRagChunkTextsModel] = []
-        chunkRelations: list[GraphRagRelationModel] = []
         chunkQuestions: list[GraphRagQuestionModel] = []
 
         for chunk in chunks:
+            cleanedChunk = await self.CleanYtChunk(
+                retryLoopIndex=0,
+                messages=[
+                    CerebrasChatMessageModel(
+                        role=CerebrasChatMessageRoleEnum.SYSTEM,
+                        content=CLEAN_YT_CHUNK_PROMPT,
+                    ),
+                    CerebrasChatMessageModel(
+                        role=CerebrasChatMessageRoleEnum.USER,
+                        content=chunk,
+                    ),
+                ],
+            )
+            print(cleanedChunk)
             messages: list[CerebrasChatMessageModel] = [
                 CerebrasChatMessageModel(
                     role=CerebrasChatMessageRoleEnum.SYSTEM,
-                    content=EXTRCT_INFO_FROM_CHUNK_YT_VIDEO,
+                    content=EXTRCT_INFO_FROM_CHUNK_FOR_GRAPH_RAG,
                 ),
                 CerebrasChatMessageModel(
                     role=CerebrasChatMessageRoleEnum.USER,
-                    content=chunk,
+                    content=cleanedChunk,
                 ),
             ]
 
             chunkGraphRagInfo = await self.ExtractRagInformationFromChunk(
                 messages=messages, retryLoopIndex=0
             )
+            print(chunkGraphRagInfo)
 
             chunkId = uuid4()
 
             thisChunkText = GraphRagChunkTextsModel(
                 id=chunkId, text=chunkGraphRagInfo.chunk
             )
-
-            thisChunkRelations = [
-                GraphRagRelationModel(id=uuid4(), chunkId=chunkId, text=rel)
-                for rel in chunkGraphRagInfo.relations
-            ]
 
             thisChunkQuestions = [
                 GraphRagQuestionModel(id=uuid4(), chunkId=chunkId, text=question)
@@ -144,7 +204,6 @@ class BuildYtRag(BuildYtRagImpl):
 
             texts: list[str] = [chunkGraphRagInfo.chunk]
             texts.extend(chunkGraphRagInfo.questions)
-            texts.extend(chunkGraphRagInfo.relations)
 
             textVectors = await self.ConvertTextToEmbeddings(texts=texts)
 
@@ -155,15 +214,10 @@ class BuildYtRag(BuildYtRagImpl):
                 for i, item in enumerate(textVectors[1 : 1 + qLen]):
                     thisChunkQuestions[i].embedding = item.embedding
 
-                for i, item in enumerate(textVectors[1 + qLen :]):
-                    thisChunkRelations[i].embedding = item.embedding
-
             chunkTexts.append(thisChunkText)
-            chunkRelations.extend(thisChunkRelations)
             chunkQuestions.extend(thisChunkQuestions)
 
         return BuildRagResponseModel(
             chunkQuestions=chunkQuestions,
-            chunkRelations=chunkRelations,
             chunks=chunkTexts,
         )

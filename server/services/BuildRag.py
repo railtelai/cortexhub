@@ -16,7 +16,6 @@ class BuildRag(BuildRagImpl):
 
         chunkTexts: list[Any] = []
         chunkQuestions: list[Any] = []
-        chunkRelations: list[Any] = []
 
         if ragResponse is not None:
 
@@ -24,8 +23,6 @@ class BuildRag(BuildRagImpl):
                 chunkTexts.append((ct.id, ct.text, ct.embedding))
             for q in ragResponse.chunkQuestions:
                 chunkQuestions.append((q.id, q.chunkId, q.text, q.embedding))
-            for rel in ragResponse.chunkQuestions or []:
-                chunkRelations.append((rel.id, rel.chunkId, rel.text, rel.embedding))
 
             async with db.pool.acquire() as conn:
                 if chunkTexts:
@@ -40,11 +37,7 @@ class BuildRag(BuildRagImpl):
                         chunkQuestions,
                     )
 
-                if chunkRelations:
-                    await conn.executemany(
-                        "INSERT INTO chunk_relations (id,chunk_id, relation, embedding) VALUES ($1, $2, $3, $4)",
-                        chunkRelations,
-                    )
+           
         
     async def BuildYtRag(self, videoId: str, db: Any):
         ragResponse = await buildYtRag.HandleRagBuildProcess(
@@ -53,7 +46,6 @@ class BuildRag(BuildRagImpl):
 
         chunkTexts: list[Any] = []
         chunkQuestions: list[Any] = []
-        chunkRelations: list[Any] = []
 
         if ragResponse is not None:
 
@@ -61,8 +53,7 @@ class BuildRag(BuildRagImpl):
                 chunkTexts.append((ct.id, ct.text, ct.embedding))
             for q in ragResponse.chunkQuestions:
                 chunkQuestions.append((q.id, q.chunkId, q.text, q.embedding))
-            for rel in ragResponse.chunkQuestions or []:
-                chunkRelations.append((rel.id, rel.chunkId, rel.text, rel.embedding))
+          
 
             async with db.pool.acquire() as conn:
                 if chunkTexts:
@@ -77,17 +68,13 @@ class BuildRag(BuildRagImpl):
                         chunkQuestions,
                     )
 
-                if chunkRelations:
-                    await conn.executemany(
-                        "INSERT INTO chunk_relations (id,chunk_id, relation, embedding) VALUES ($1, $2, $3, $4)",
-                        chunkRelations,
-                    )
         
 
     async def BuildQaRag(self, file: str, db: Any):
         ragResponse = await buildQaRag.HandleBuildQaRagProcess(
             file,
         )
+
 
         chunkTexts: list[Any] = []
         chunkQuestions: list[Any] = []

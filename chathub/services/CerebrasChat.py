@@ -1,7 +1,7 @@
 import cerebras.cloud.sdk
 from cerebras.cloud.sdk import AsyncCerebras
 from fastapi.responses import StreamingResponse
-from chathub.enums import CerebrasChatResponseStatusEnum
+from chathub.enums import CerebrasChatResponseStatusEnum,CerebrasChatMessageRoleEnum
 from chathub.implementations import CerebrasChatImpl
 from chathub.models import (
     CerebrasChatRequestModel,
@@ -10,9 +10,10 @@ from chathub.models import (
     CerebrasChatUsageModel,
     CerebrasChatChoiceModel,
     CerebrasChatChoiceMessageModel,
+    CerebrasChatMessageModel,
 )
 from cerebras.cloud.sdk import DefaultAioHttpClient
-from typing import Any, cast    
+from typing import Any, cast
 from chathub.workers import GetCerebrasApiKey
 
 client = AsyncCerebras(
@@ -40,8 +41,22 @@ class CerebrasChat(CerebrasChatImpl):
     ) -> CerebrasChatResponseModel | StreamingResponse:
         try:
             client.api_key = modelParams.apiKey
+            messages: list[CerebrasChatMessageModel] = []
+            if modelParams.stream:
+                messages.append(
+                    CerebrasChatMessageModel(
+                        role=CerebrasChatMessageRoleEnum.SYSTEM,
+                        content="Always give response less then 100-300 tokens and your hmis ai assistent"
+                    )
+                )
+
+                for message in modelParams.messages:
+                    messages.append(message)
+            else:
+                messages = modelParams.messages
+
             create_call = client.chat.completions.create(
-                messages=cast(Any, modelParams.messages),
+                messages=cast(Any, messages),
                 model=modelParams.model,
                 max_completion_tokens=modelParams.maxCompletionTokens,
                 stream=modelParams.stream,
@@ -132,7 +147,6 @@ class CerebrasChat(CerebrasChatImpl):
                 status=CerebrasChatResponseStatusEnum.SUCCESS,
                 content=LLMData.choices[0].message.content,
             )
-            
 
         except cerebras.cloud.sdk.APIConnectionError as e:
             print(e)

@@ -16,6 +16,14 @@ class BuildYtRagImpl(ABC):
         pass
 
     @abstractmethod
+    
+    async def CleanYtChunk(
+        self, messages: list[CerebrasChatMessageModel], retryLoopIndex: int
+    ) -> str:
+        pass
+
+
+    @abstractmethod
     async def ConvertTextToEmbeddings(
         self, texts: list[str]
     ) -> list[ConvertTextToEmbeddingResponseModel] | None:

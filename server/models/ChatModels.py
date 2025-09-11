@@ -9,3 +9,7 @@ class ChatMessageModel(BaseModel):
 class ChatRequestModel(BaseModel):
     query: str
     messages: list[ChatMessageModel] = []
+
+class PreProcessUserQueryResponseModel(BaseModel):
+    cleanQuery: str
+    type:str

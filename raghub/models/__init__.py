@@ -1,6 +1,5 @@
 from .BuildRagFromDocModels import (
     ExtractRagInformationFromChunkResponseModel,
-    GraphRagRelationModel,
     GraphRagChunkTextsModel,
     GraphRagQuestionModel,
     ConvertTextToEmbeddingResponseModel,
@@ -17,7 +16,6 @@ from .BuildQaRagFromDocModels import (
 
 __all__ = [
     "ExtractRagInformationFromChunkResponseModel",
-    "GraphRagRelationModel",
     "GraphRagChunkTextsModel",
     "GraphRagQuestionModel",
     "ConvertTextToEmbeddingResponseModel",

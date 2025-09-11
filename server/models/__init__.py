@@ -1,5 +1,5 @@
-from .ChatModels import ChatRequestModel
+from .ChatModels import ChatRequestModel, PreProcessUserQueryResponseModel
 
 __all__ = [
-    "ChatRequestModel"
+    "ChatRequestModel", "PreProcessUserQueryResponseModel"
 ]

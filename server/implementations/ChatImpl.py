@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from chathub.models import CerebrasChatMessageModel
 from fastapi.responses import StreamingResponse
-from server.models import ChatRequestModel
+from server.models import ChatRequestModel, PreProcessUserQueryResponseModel
 from raghub.models import (
     ConvertTextToEmbeddingResponseModel,
     RerankeRequestModel,
@@ -11,13 +11,19 @@ from raghub.models import (
 
 class ChatImpl(ABC):
     @abstractmethod
-    async def cerebrasContextChat(
+    async def CerebrasNormalChat(
         self, messages: list[CerebrasChatMessageModel]
     ) -> StreamingResponse | None:
         pass
 
     @abstractmethod
-    async def cerebrasChat(
+    async def PreProcessUserQuery(
+        self, query: str, messages: list[CerebrasChatMessageModel], loopIndex: int
+    ) -> PreProcessUserQueryResponseModel:
+        pass
+
+    @abstractmethod
+    async def CerebrasHmisAnswer(
         self, messages: list[CerebrasChatMessageModel]
     ) -> StreamingResponse | None:
         pass

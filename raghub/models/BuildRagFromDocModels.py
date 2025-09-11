@@ -4,7 +4,6 @@ from uuid import UUID
 
 class ExtractRagInformationFromChunkResponseModel(BaseModel):
     chunk: str
-    relations: list[str]
     questions: list[str]
 
 
@@ -21,11 +20,6 @@ class GraphRagQuestionModel(BaseModel):
     embedding: list[float] | None = None
 
 
-class GraphRagRelationModel(BaseModel):
-    id: UUID
-    chunkId: UUID
-    text: str
-    embedding: list[float] | None = None
 
 
 class ConvertTextToEmbeddingResponseModel(BaseModel):
@@ -36,7 +30,6 @@ class ConvertTextToEmbeddingResponseModel(BaseModel):
 class BuildRagResponseModel(BaseModel):
     chunks: list[GraphRagChunkTextsModel]
     chunkQuestions: list[GraphRagQuestionModel]
-    chunkRelations: list[GraphRagRelationModel]
 
 
 class RerankeRequestModel(BaseModel):

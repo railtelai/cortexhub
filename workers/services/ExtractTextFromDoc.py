@@ -31,11 +31,13 @@ class ExtractTextFromDoc(ExtractTextFromDocImpl):
         allText: list[str] = []
 
         for row in df.itertuples(index=False):
-            rowText = "  ".join(
-                "" if cast(Any, pd).isna(cell) else str(cell) for cell in row
-            )
-            if rowText.strip():
-                allText.append(rowText)
+            for col_index, value in enumerate(row):
+                if cast(Any, pd).isna(value):
+                    value = None
+                else:
+                    text = str(value).strip()
+                    value = text if text else "None"
+                allText.append(f"<<C{col_index+1}-START>>{value}<<C{col_index+1}-END>>")
 
         return "\n".join(allText)
 

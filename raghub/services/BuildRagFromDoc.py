@@ -10,7 +10,6 @@ from chathub.enums import CerebrasChatMessageRoleEnum
 from raghub.models import (
     ExtractRagInformationFromChunkResponseModel,
     GraphRagQuestionModel,
-    GraphRagRelationModel,
     GraphRagChunkTextsModel,
     ConvertTextToEmbeddingResponseModel,
     BuildRagResponseModel,
@@ -31,7 +30,7 @@ class BuildRagFromDoc(BuildRagFromDocImpl):
 
     async def HandleChunkProcessing(self, file: str) -> list[str]:
         chunks, images = self.ragUtils.ExtractChunksFromDoc(
-            file=file, chunkOLSize=200, chunkSize=3000
+            file=file, chunkOLSize=100, chunkSize=1200
         )
         processedChunk: list[str] = []
 
@@ -61,7 +60,7 @@ class BuildRagFromDoc(BuildRagFromDocImpl):
     ) -> ExtractRagInformationFromChunkResponseModel:
         if retryLoopIndex > self.RetryLoopIndexLimit:
             raise Exception(
-                "Exception while extarcting relation and questions from chunk"
+                "Exception while extarcting  questions from chunk"
             )
 
         cerebrasChatResponse: Any = await cerebrasChat.Chat(
@@ -70,15 +69,14 @@ class BuildRagFromDoc(BuildRagFromDocImpl):
                 model="qwen-3-235b-a22b-instruct-2507",
                 maxCompletionTokens=30000,
                 messages=messages,
-                temperature=0.0,
+                temperature=0.2,
                 responseFormat={
                     "type": "object",
                     "properties": {
-                        "relations": {"type": "array", "items": {"type": "string"}},
                         "questions": {"type": "array", "items": {"type": "string"}},
                         "chunk": {"type": "string"},
                     },
-                    "required": ["relations", "chunk", "questions"],
+                    "required": [ "chunk", "questions"],
                     "additionalProperties": False,
                 },
             )
@@ -106,7 +104,6 @@ class BuildRagFromDoc(BuildRagFromDocImpl):
         response = ExtractRagInformationFromChunkResponseModel(
             chunk=chatResponse.get("chunk"),
             questions=chatResponse.get("questions"),
-            relations=chatResponse.get("relations"),
         )
         return response
 
@@ -137,7 +134,6 @@ class BuildRagFromDoc(BuildRagFromDocImpl):
         if process == RagBuildProcessEnum.GRAPHRAG:
             chunks = await self.HandleChunkProcessing(file=file)
             chunkTexts: list[GraphRagChunkTextsModel] = []
-            chunkRelations: list[GraphRagRelationModel] = []
             chunkQuestions: list[GraphRagQuestionModel] = []
 
             for chunk in chunks:
@@ -160,10 +156,6 @@ class BuildRagFromDoc(BuildRagFromDocImpl):
                 thisChunkText = GraphRagChunkTextsModel(
                     id=chunkId, text=chunkGraphRagInfo.chunk
                 )
-                thisChunkRelationts = [
-                    GraphRagRelationModel(id=uuid4(), chunkId=chunkId, text=rel)
-                    for rel in chunkGraphRagInfo.relations
-                ]
                 thisChunkQuestions = [
                     GraphRagQuestionModel(id=uuid4(), chunkId=chunkId, text=rel)
                     for rel in chunkGraphRagInfo.questions
@@ -173,28 +165,19 @@ class BuildRagFromDoc(BuildRagFromDocImpl):
                 texts.append(chunkGraphRagInfo.chunk)
                 for _, claim in enumerate(chunkGraphRagInfo.questions):
                     texts.append(claim)
-                for _, relation in enumerate(chunkGraphRagInfo.relations):
-                    texts.append(relation)
 
                 textVectors = await self.ConvertTextToEmbeddings(texts=texts)
                 c = 1
                 cLen = len(chunkGraphRagInfo.questions)
-                rLen = len(chunkGraphRagInfo.relations)
                 if textVectors is not None:
                     thisChunkText.embedding = textVectors[0].embedding
                     for cIndex, item in enumerate(textVectors[c : c + cLen]):
                         thisChunkQuestions[cIndex].embedding = item.embedding
 
-                    for rIndex, item in enumerate(
-                        textVectors[c + cLen : c + cLen + rLen]
-                    ):
-                        thisChunkRelationts[rIndex].embedding = item.embedding
                 chunkTexts.append(thisChunkText)
-                chunkRelations.extend(thisChunkRelationts)
                 chunkQuestions.extend(thisChunkQuestions)
             return BuildRagResponseModel(
                 chunkQuestions=chunkQuestions,
-                chunkRelations=chunkRelations,
                 chunks=chunkTexts,
             )
 
