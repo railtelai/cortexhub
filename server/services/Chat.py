@@ -69,10 +69,11 @@ class Chat(ChatImpl):
 
         chatResponse: Any = {}
         try:
-
+            
             chatResponse = json.loads(preProcessResponse.content).get("response")
             if chatResponse.get("cleanquery") is None:
                 raise Exception("Exception while extracting relations from chunk")
+            
 
         except Exception as e:
             print("Error occured while extracting realtions from chunk retrying ...")
@@ -215,7 +216,9 @@ MANDATORY RULES (follow in order):
     - If type = PREVIOUS but there is no explicit immediate assistant prompt to continue/search, DO NOT guess — set type = SEARCH and normalize the user message into cleanquery.
 11. If classification is ambiguous, prefer SEARCH (not HMIS).
 12. Validate output: ensure "type" is one of allowed enums. If your internal reasoning would produce any other value, output {"cleanquery":"<normalized text>","type":"SEARCH"} instead.
-13. Do not invent or use hidden context. Use only the provided conversation context.""",
+13. Do not invent or use hidden context. Use only the provided conversation context.
+cleanquery can never be empty.
+""",
             ),
         ]
         for message in request.messages:
@@ -307,9 +310,9 @@ MANDATORY RULES (follow in order):
                 )
 
                 for row in rows:
-                    docs.append(
-                        f"For this question : {row.get("question_text")} Answer is {row.get("chunk_text")}"
-                    )
+                    question = row.get("question_text", "")
+                    answer = row.get("chunk_text", "")
+                    docs.append(f"For this question : {question} Answer is {answer}")
 
             print(preProcessResponse.cleanQuery)
 
